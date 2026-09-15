@@ -1,10 +1,5 @@
 import os
 import io
-import requests
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from typing import Type, Optional
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
@@ -58,10 +53,22 @@ class TradingChartTool(BaseTool):
             return f"ERROR generating or sending chart: {str(e)}"
 
     def _generate_chart(
-        self, asset, direction, entry, stop_loss,
-        take_profit_1, take_profit_2,
-        setup_type, timeframe, confidence
+        self,
+        asset,
+        direction,
+        entry,
+        stop_loss,
+        take_profit_1,
+        take_profit_2,
+        setup_type,
+        timeframe,
+        confidence,
     ):
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as mpatches
+
         is_long = direction.upper() == "LONG"
 
         levels = [entry, stop_loss, take_profit_1]
@@ -173,6 +180,8 @@ class TradingChartTool(BaseTool):
         return buf.read()
 
     def _send_to_telegram(self, img_bytes, asset, direction, chat_id):
+        import requests
+
         token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
         if not token:
             return "ERROR: TELEGRAM_BOT_TOKEN environment variable is not set. Add it in the platform settings."
