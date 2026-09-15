@@ -1,1 +1,4 @@
-from chart_generator_tool.tool import TradingChartTool\nfrom crewai.tools import BaseTool\n__all__ = ['TradingChartTool', 'BaseTool']
+from chart_generator_tool.tool import TradingChartTool
+from crewai.tools import BaseTool
+
+__all__ = ['TradingChartTool', 'BaseTool']
