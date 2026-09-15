@@ -1,1 +1,9 @@
-*.txt 
+.venv/ 
+venv-chart/ 
+.venvLibsite-packages/ 
+__pycache__/ 
+*.pyc 
+*.pyo 
+Procfile.txt 
+app .py.txt 
+requirements.txt.txt
