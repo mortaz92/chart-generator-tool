@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Generates trading setup charts and sends them to Telegram"
 requires-python = ">=3.10,<3.13"
 dependencies = [
+    "crewai>=0.100.0",
     "matplotlib>=3.7.0",
     "mplfinance>=0.12.10b0",
     "requests>=2.31.0",
