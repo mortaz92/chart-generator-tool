@@ -15,5 +15,9 @@ dependencies = [
     "pillow>=10.0.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["chart_generator_tool*"]
+
 [tool.crewai]
 type = "tool"
