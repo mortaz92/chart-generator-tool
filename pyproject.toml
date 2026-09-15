@@ -9,12 +9,12 @@ description = "Generates trading setup charts and sends them to Telegram"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "crewai>=0.100.0",
+    "pydantic>=2.0.0",
     "matplotlib>=3.7.0",
     "mplfinance>=0.12.10b0",
     "requests>=2.31.0",
     "pillow>=10.0.0",
 ]
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["chart_generator_tool*"]
