@@ -1,0 +1,1 @@
+flask==3.0.0 matplotlib==3.8.0 requests==2.31.0 gunicorn==21.2.0
