@@ -3,8 +3,8 @@ from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 
 # Puntiamo direttamente alla cartella di build di Vite
-frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
-app = Flask(__name__, static_folder=frontend_dist, static_url_path='')
+dist_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
+app = Flask(__name__, static_folder=dist_dir, static_url_path='')
 CORS(app)
 
 signals = []
