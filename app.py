@@ -1,22 +1,33 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)  # Abilita CORS per il frontend
+# Serviamo i file statici dalla cartella 'frontend/dist' che verrà creata dopo il build
+app = Flask(__name__, static_folder='frontend/dist', static_url_path='')
+CORS(app)
 
-# Simulazione database segnali (in futuro usiamo PostgreSQL/Drizzle)
 signals = []
+
+@app.route('/')
+def index():
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/api/signals', methods=['POST'])
 def add_signal():
     data = request.json
     signals.append(data)
-    return jsonify({"status": "success", "message": "Signal received"}), 201
+    return jsonify({"status": "success"}), 201
 
 @app.route('/api/signals', methods=['GET'])
 def get_signals():
     return jsonify(signals)
+
+# Catch-all per il routing di React (SPA)
+@app.route('/<path:path>')
+def serve_static(path):
+    if os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=4000)
