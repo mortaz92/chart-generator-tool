@@ -16,7 +16,8 @@ const Dashboard = () => {
   const [activeAsset, setActiveAsset] = useState<string>('BTC/USD');
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/signals')
+    // Puntiamo all'URL Render pubblico
+    fetch('https://trading-chart-webhook.onrender.com/api/signals')
       .then(res => res.json())
       .then(data => setSignals(data))
       .catch(err => console.error("API Error:", err));
