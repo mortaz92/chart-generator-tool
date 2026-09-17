@@ -2,8 +2,8 @@ import os
 from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 
-# Serviamo i file statici dalla cartella 'frontend/dist' che verrà creata dopo il build
-app = Flask(__name__, static_folder='frontend/dist', static_url_path='')
+# Serviamo i file statici direttamente dalla radice dopo il build
+app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 
 signals = []
