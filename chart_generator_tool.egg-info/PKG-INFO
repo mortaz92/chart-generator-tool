@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: chart-generator-tool
+Version: 0.1.0
+Summary: Generates trading setup charts and sends them to Telegram
+Requires-Python: <3.13,>=3.10
+Requires-Dist: crewai>=0.100.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: matplotlib>=3.7.0
+Requires-Dist: mplfinance>=0.12.10b0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: pillow>=10.0.0

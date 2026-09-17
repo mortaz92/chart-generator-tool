@@ -1,0 +1,153 @@
+import os
+import io
+import requests
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "572100406")
+
+
+def generate_chart(data):
+    asset = data.get("asset", "N/A")
+    direction = data.get("direction", "LONG").upper()
+    entry = float(data["entry"])
+    stop_loss = float(data["stop_loss"])
+    tp1 = float(data["take_profit_1"])
+    tp2 = float(data["take_profit_2"]) if data.get("take_profit_2") else None
+    setup_type = data.get("setup_type", "")
+    timeframe = data.get("timeframe", "")
+    confidence = data.get("confidence", "")
+
+    is_long = direction == "LONG"
+    levels = [entry, stop_loss, tp1] + ([tp2] if tp2 else [])
+    price_range = max(levels) - min(levels)
+    if price_range == 0:
+        price_range = abs(entry) * 0.01
+    margin = price_range * 0.4
+    y_min = min(levels) - margin
+    y_max = max(levels) + margin
+
+    risk = abs(entry - stop_loss)
+    rr1 = round(abs(tp1 - entry) / risk, 2) if risk > 0 else "N/A"
+    rr2 = round(abs(tp2 - entry) / risk, 2) if tp2 and risk > 0 else None
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+    fig.patch.set_facecolor('#0d1117')
+    ax.set_facecolor('#0d1117')
+
+    if is_long:
+        ax.axhspan(stop_loss, entry, alpha=0.15, color='#ff4444')
+        ax.axhspan(entry, tp1, alpha=0.12, color='#00ff88')
+        if tp2:
+            ax.axhspan(tp1, tp2, alpha=0.08, color='#00cc66')
+    else:
+        ax.axhspan(entry, stop_loss, alpha=0.15, color='#ff4444')
+        ax.axhspan(tp1, entry, alpha=0.12, color='#00ff88')
+        if tp2:
+            ax.axhspan(tp2, tp1, alpha=0.08, color='#00cc66')
+
+    lines = [
+        (entry, '#FFD700', 2.5, f'ENTRY  {entry:,.5f}', 'solid'),
+        (stop_loss, '#FF4444', 2.0, f'STOP LOSS  {stop_loss:,.5f}', 'dashed'),
+        (tp1, '#00FF88', 2.0, f'TP1  {tp1:,.5f}  (R:R {rr1})', 'dashed'),
+    ]
+    if tp2:
+        lines.append((tp2, '#00CC66', 1.5, f'TP2  {tp2:,.5f}  (R:R {rr2})', 'dotted'))
+
+    for price, color, lw, label, ls in lines:
+        ax.axhline(y=price, color=color, linewidth=lw, linestyle=ls, alpha=0.9, zorder=2)
+        ax.text(
+            0.02, price, f' {label}',
+            transform=ax.get_yaxis_transform(),
+            color=color, fontsize=9, fontweight='bold', va='center',
+            bbox=dict(boxstyle='round,pad=0.2', facecolor='#0d1117', alpha=0.7, edgecolor='none')
+        )
+
+    dir_emoji = 'LONG' if is_long else 'SHORT'
+    parts = [f'{asset}  |  {dir_emoji}']
+    if setup_type:
+        parts.append(setup_type)
+    if timeframe:
+        parts.append(timeframe)
+    if confidence:
+        parts.append(f'Confidence: {confidence}')
+    ax.set_title('  |  '.join(parts), color='white', fontsize=13, fontweight='bold', pad=15)
+
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlim(0, 1)
+    ax.set_xticks([])
+    ax.tick_params(colors='#aaaaaa')
+    for spine in ax.spines.values():
+        spine.set_edgecolor('#333333')
+
+    patches = [
+        mpatches.Patch(color='#FFD700', label='Entry'),
+        mpatches.Patch(color='#FF4444', label='Stop Loss'),
+        mpatches.Patch(color='#00FF88', label='TP1'),
+    ]
+    if tp2:
+        patches.append(mpatches.Patch(color='#00CC66', label='TP2'))
+    ax.legend(handles=patches, loc='upper right',
+              facecolor='#1a1a2e', edgecolor='#333333',
+              labelcolor='white', fontsize=9)
+
+    ax.text(0.5, 0.01, 'QuantitativeMarketAnalyst Flow',
+            transform=ax.transAxes, color='#444444', fontsize=7, ha='center')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight',
+                facecolor=fig.get_facecolor())
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok"})
+
+
+@app.route('/chart', methods=['POST'])
+def send_chart():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON body"}), 400
+
+    for field in ["entry", "stop_loss", "take_profit_1"]:
+        if field not in data:
+            return jsonify({"error": f"Missing field: {field}"}), 400
+
+    chat_id = data.get("telegram_chat_id", TELEGRAM_CHAT_ID)
+
+    try:
+        img_bytes = generate_chart(data)
+    except Exception as e:
+        return jsonify({"error": f"Chart generation failed: {str(e)}"}), 500
+
+    asset = data.get("asset", "N/A")
+    direction = data.get("direction", "")
+    caption = f"Setup grafico: {asset} {direction}"
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    resp = requests.post(
+        url,
+        data={"chat_id": chat_id, "caption": caption},
+        files={"photo": ("chart.png", img_bytes, "image/png")},
+        timeout=30
+    )
+
+    if resp.status_code == 200:
+        return jsonify({"status": "sent", "message_id": resp.json()["result"]["message_id"]})
+    else:
+        return jsonify({"error": resp.text}), 500
+
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

@@ -43,6 +43,19 @@ class TradingChartTool(BaseTool):
         telegram_chat_id: str = "",
     ) -> str:
         try:
+            # Invio dati JSON alla Dashboard API
+            self._send_to_dashboard({
+                "asset": asset,
+                "direction": direction,
+                "entry": entry,
+                "stop_loss": stop_loss,
+                "take_profit_1": take_profit_1,
+                "take_profit_2": take_profit_2,
+                "setup_type": setup_type,
+                "timeframe": timeframe,
+                "confidence": confidence
+            })
+
             img_bytes = self._generate_chart(
                 asset, direction, entry, stop_loss,
                 take_profit_1, take_profit_2,
@@ -51,6 +64,13 @@ class TradingChartTool(BaseTool):
             return self._send_to_telegram(img_bytes, asset, direction, telegram_chat_id)
         except Exception as e:
             return f"ERROR generating or sending chart: {str(e)}"
+
+    def _send_to_dashboard(self, data):
+        import requests
+        try:
+            requests.post("http://localhost:4000/api/signals", json=data, timeout=5)
+        except Exception as e:
+            print(f"Warning: Could not send to dashboard: {e}")
 
     def _generate_chart(
         self,
